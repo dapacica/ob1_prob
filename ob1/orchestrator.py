@@ -10,7 +10,6 @@ from ob1.github_api import (
 )
 from dotenv import load_dotenv
 
-# Load .env file automatically at runtime
 load_dotenv()
 
 

@@ -1,7 +1,9 @@
 import asyncio
 import os
+import uuid
 from pathlib import Path
 from ob1.agent_base import AgentBase
+from ob1.utils.logging_utils import log
 from anthropic import Anthropic
 
 
@@ -9,8 +11,10 @@ class ClaudeAgent(AgentBase):
     def __init__(self, name: str):
         super().__init__(name)
         self.client = Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
-        # Cheapest + fastest Claude model
+        # cheapest Claude model
         self.model = "claude-3-haiku-20240307"
+        # unique short id for this agent instance
+        self.run_id = str(uuid.uuid4())[:8]
 
     async def run(self, worktree_path: Path, prompt: str):
         """Local mode: generate full code using Claude and write it."""
@@ -26,6 +30,8 @@ class ClaudeAgent(AgentBase):
 
     async def generate_code_response(self, prompt: str) -> str:
         """Ask Claude to produce the complete code for the given task."""
+        log(f"[ClaudeAgent:{self.run_id}] Generating code for: '{prompt}'")
+
         system_prompt = (
             "You are an expert software engineer. "
             "Given a user task, output only the complete code implementation "
@@ -33,24 +39,29 @@ class ClaudeAgent(AgentBase):
         )
         user_prompt = f"Task: {prompt}"
 
-        # Wrap sync SDK call for async
         def _sync_call():
             return self.client.messages.create(
                 model=self.model,
                 max_tokens=2000,
                 temperature=0.4,
-                system=system_prompt,  # ✅ system prompt is now a top-level param
-                messages=[
-                    {"role": "user", "content": user_prompt},
-                ],
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
             )
-        __import__('ipdb').set_trace()
-        response = await asyncio.to_thread(_sync_call)
 
-        # Extract text content safely
+        try:
+            response = await asyncio.to_thread(_sync_call)
+        except Exception as e:
+            log(f"[ClaudeAgent:{self.run_id}] Error generating code: {e}")
+            return f"# ClaudeAgent:{self.run_id}: generation failed due to error: {e}"
+
         content = ""
         if response and hasattr(response, "content") and response.content:
             parts = [c.text for c in response.content if hasattr(c, "text")]
             content = "\n".join(parts).strip()
 
-        return content or "# ClaudeAgent: No code generated."
+        if content:
+            log(f"[ClaudeAgent:{self.run_id}] Code generation completed successfully.")
+        else:
+            log(f"[ClaudeAgent:{self.run_id}] No content returned from Claude.")
+
+        return content or f"# ClaudeAgent:{self.run_id}: No code generated."

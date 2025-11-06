@@ -25,11 +25,21 @@ class AgentBase(ABC):
 def get_agent_class(name: str) -> Type[AgentBase]:
     from ob1.agents.dummy_agent import DummyAgent
     from ob1.agents.claude_agent import ClaudeAgent
+    from ob1.agents.codex_agent import CodexAgent
+    # from ob1.agents.cursor_agent import CursorAgent  # temporarily disabled
 
     lookup = {
         "dummy": DummyAgent,
         "claude": ClaudeAgent,
+        "codex": CodexAgent,
         # "cursor": CursorAgent,
-        # "codex": CodexAgent,
     }
-    return lookup.get(name.lower(), DummyAgent)
+
+    name_lower = name.lower()
+    if name_lower == "cursor":
+        raise KeyError("CursorAgent is currently unavailable (API restricted). Please use Claude or Codex instead.")
+    if name_lower not in lookup:
+        raise KeyError(f"Unknown agent '{name}'")
+
+    return lookup[name_lower]
+

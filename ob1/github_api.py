@@ -157,19 +157,16 @@ def commit_files_batch(branch: str, files: dict[str, str], message: str):
     return commit_sha
 
 
-def create_pr(title: str, head_branch: str, base_branch: str | None = None, body: str = "", draft: bool = False):
+def create_pr(title: str, head_branch: str, base_branch: str = None, body: str = "", draft: bool = False):
     owner, repo = _repo()
     base_branch = base_branch or get_default_branch()
     r = requests.post(
         f"{GH_API}/repos/{owner}/{repo}/pulls",
         headers=_auth_headers(),
-        json={
-            "title": title,
-            "head": head_branch,
-            "base": base_branch,
-            "body": body,
-            "draft": draft,
-        },
+        json={"title": title, "head": head_branch, "base": base_branch, "body": body, "draft": draft},
     )
+    if r.status_code == 422:
+        print(f"[GitHubAPI] PR creation failed: {r.text}")
     r.raise_for_status()
     return r.json()["html_url"]
+

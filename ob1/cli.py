@@ -3,7 +3,7 @@ import asyncio
 import random
 from ob1.orchestrator import run_orchestration
 
-AVAILABLE_AGENTS = ["claude", "codex", "cursor"]
+AVAILABLE_AGENTS = ["claude", "codex"] # "cursor" temporarily disabled
 
 def main():
     parser = argparse.ArgumentParser(description="Run multiple AI agents in parallel.")
@@ -29,7 +29,9 @@ def main():
     else:
         available = args.agents or AVAILABLE_AGENTS
         selected_agents = random.choices(available, k=args.num_agents)
-    __import__('ipdb').set_trace()
+
+    print(f"Using agents: {', '.join(selected_agents)} for prompt: '{args.message}'")
+
     asyncio.run(
     run_orchestration(
             args.message,
