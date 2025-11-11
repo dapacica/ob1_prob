@@ -1,0 +1,61 @@
+name: QA Agent
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  qa-agent:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv and project dependencies
+        run: |
+          pip install uv
+          uv sync
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm install
+          fi
+
+      - name: Install Playwright (for headless recording)
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Run QA Agent (AI-assisted build + record)
+        env:
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          GH_OWNER: ${{ github.repository_owner }}
+          GH_REPO: ${{ github.event.repository.name }}
+        run: |
+          mkdir -p artifacts
+          uv run python scripts/qa_agent_script.py || echo "QA Agent encountered an error"
+
+      - name: Upload video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-demo
+          path: artifacts/*.mp4
