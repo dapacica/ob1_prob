@@ -45,7 +45,7 @@ jobs:
           pip install playwright
           playwright install --with-deps chromium
 
-      - name: Debug - show working directory and files
+      - name: (Debug) show working directory and files
         run: |
           echo "Current working directory:"
           pwd
