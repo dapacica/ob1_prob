@@ -5,16 +5,17 @@ from pathlib import Path
 from ob1.agent_base import AgentBase
 from ob1.utils.logging_utils import log
 from anthropic import Anthropic
+from ob1.agents.utils.agent_utils import DEFAULT_CODING_AGENT_SYSTEM_PROMPT
 
 
 class ClaudeAgent(AgentBase):
+    """Agent wrapper around Anthropic Claude (Haiku model for speed and cost efficiency)."""
+
     def __init__(self, name: str):
         super().__init__(name)
         self.client = Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
-        # cheapest Claude model
-        self.model = "claude-3-haiku-20240307"
-        # unique short id for this agent instance
-        self.run_id = str(uuid.uuid4())[:8]
+        self.model = "claude-3-haiku-20240307"  # cheapest Claude model
+        self.run_id = str(uuid.uuid4())[:8]  # short unique ID for logging
 
     async def run(self, worktree_path: Path, prompt: str):
         """Local mode: generate full code using Claude and write it."""
@@ -28,15 +29,13 @@ class ClaudeAgent(AgentBase):
         await asyncio.sleep(0.5)
         return {"generated_code.txt": code}
 
-    async def generate_code_response(self, prompt: str) -> str:
-        """Ask Claude to produce the complete code for the given task."""
+    async def generate_code_response(
+        self, prompt: str, system_prompt: str | None = DEFAULT_CODING_AGENT_SYSTEM_PROMPT
+    ) -> str:
+        """Ask Claude to produce the complete code for the given task.
+        Allows overriding the default system prompt."""
         log(f"[ClaudeAgent:{self.run_id}] Generating code for: '{prompt}'")
 
-        system_prompt = (
-            "You are an expert software engineer. "
-            "Given a user task, output only the complete code implementation "
-            "required to fulfill it. Do not include explanations or text outside the code."
-        )
         user_prompt = f"Task: {prompt}"
 
         def _sync_call():

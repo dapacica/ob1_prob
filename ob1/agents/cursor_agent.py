@@ -1,35 +1,7 @@
-import asyncio
-import os
-import json
-import subprocess
-from pathlib import Path
-from ob1.agent_base import AgentBase
-
-
 '''
 NOTE: This agent is failing at the moment due to issues with the Cursor Cloud API creds.
 '''
-
-class CursorAgent(AgentBase):
-    def __init__(self, name: str):
-        super().__init__(name)
-        self.api_key = os.getenv("CURSOR_API_KEY")
-        if not self.api_key:
-            raise RuntimeError("Missing CURSOR_API_KEY in environment")
-        # Official Cursor API endpoint
-        self.api_url = os.getenv("CURSOR_API_URL", "https://api.cursor.com/v0/agents")
-
-    async def run(self, worktree_path: Path, prompt: str):
-        code = await self.generate_code_response(prompt)
-        (worktree_path / "generated_code.txt").write_text(code)
-        await asyncio.sleep(0.5)
-
-    async def generate_files(self, prompt: str) -> dict[str, str]:
-        code = await self.generate_code_response(prompt)
-        await asyncio.sleep(0.5)
-        return {"generated_code.txt": code}
-
-    import asyncio
+import asyncio
 import os
 import json
 import subprocess

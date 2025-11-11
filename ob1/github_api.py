@@ -3,6 +3,8 @@ import os
 import requests
 from typing import Iterable
 
+from ob1.utils.logging_utils import log
+
 GH_API = "https://api.github.com"
 
 # Global context optionally set by orchestrator
@@ -166,7 +168,7 @@ def create_pr(title: str, head_branch: str, base_branch: str = None, body: str =
         json={"title": title, "head": head_branch, "base": base_branch, "body": body, "draft": draft},
     )
     if r.status_code == 422:
-        print(f"[GitHubAPI] PR creation failed: {r.text}")
+        log(f"[GitHubAPI] PR creation failed: {r.text}")
     r.raise_for_status()
     return r.json()["html_url"]
 

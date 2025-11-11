@@ -5,15 +5,17 @@ from pathlib import Path
 from ob1.agent_base import AgentBase
 from ob1.utils.logging_utils import log
 from openai import OpenAI
+from ob1.agents.utils.agent_utils import DEFAULT_CODING_AGENT_SYSTEM_PROMPT
 
 
 class CodexAgent(AgentBase):
+    """Agent wrapper around OpenAI's Codex-like models (e.g. GPT-4 Turbo)."""
+
     def __init__(self, name: str):
         super().__init__(name)
         self.client = OpenAI(api_key=os.getenv("CODEX_API_KEY"))
         self.model = os.getenv("CODEX_MODEL", "gpt-4-turbo")
-        # unique ID for this agent instance (shortened for readability)
-        self.run_id = str(uuid.uuid4())[:8]
+        self.run_id = str(uuid.uuid4())[:8]  # short unique ID for logging
 
     async def run(self, worktree_path: Path, prompt: str):
         """Local mode: generate code using Codex (OpenAI) and write it."""
@@ -27,15 +29,13 @@ class CodexAgent(AgentBase):
         await asyncio.sleep(0.5)
         return {"generated_code.txt": code}
 
-    async def generate_code_response(self, prompt: str) -> str:
-        """Ask Codex (GPT model) to produce complete code for the task."""
+    async def generate_code_response(
+        self, prompt: str, system_prompt: str | None = DEFAULT_CODING_AGENT_SYSTEM_PROMPT
+    ) -> str:
+        """Ask Codex (GPT model) to produce complete code for the task.
+        Allows overriding the default system prompt."""
         log(f"[CodexAgent:{self.run_id}] Generating code for: '{prompt}'")
 
-        system_prompt = (
-            "You are an expert software engineer. "
-            "Given a user task, produce only the complete code implementation "
-            "required to fulfill it — no explanations, markdown, or extra text."
-        )
         user_prompt = f"Task: {prompt}"
 
         def _sync_call():
