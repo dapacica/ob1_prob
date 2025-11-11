@@ -1,4 +1,3 @@
-import os
 import subprocess
 import time
 from pathlib import Path
@@ -22,15 +21,30 @@ class QATestingAgent:
         self.video_path = self.output_dir / "frontend_demo.mp4"
         self.agent = ClaudeAgent("claude")
 
-        self.system_prompt = system_prompt 
+        self.system_prompt = system_prompt
 
     def analyze_code(self, prompt: str, system_prompt: str | None = DEFAULT_QA_AGENT_SYSTEM_PROMPT) -> str:
         """Ask Claude to analyze and verify the code from the PR."""
         effective_prompt = system_prompt or self.system_prompt
-        code_analysis = self.agent.generate_code_response(
-            prompt,
-            system_prompt=effective_prompt,
-        )
+        try:
+            code_analysis = self.agent.generate_code_response(
+                prompt,
+                system_prompt=effective_prompt,
+            )
+            if not code_analysis or "ClaudeAgent" in str(code_analysis):
+                raise ValueError("Empty or invalid response from Claude.")
+        except Exception as e:
+            log(f"[QA Agent] Error analyzing code: {e}; using dummy analysis.")
+            code_analysis = (
+                "# Dummy QA Report\n"
+                "The automated QA system encountered an issue analyzing the code.\n"
+                "This is a placeholder report.\n"
+                "- Build and run the app manually.\n"
+                "- Verify that the main UI components render correctly.\n"
+                "- Check for console errors or missing dependencies.\n"
+                "- Ensure responsive behavior on desktop and mobile.\n"
+            )
+
         self.qa_log_path.write_text(str(code_analysis))
         return code_analysis
 
